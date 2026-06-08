@@ -1,3 +1,5 @@
+'use client';
+
 import eventsData from '../data/events.json';
 
 type EventItem = {
@@ -116,9 +118,8 @@ function CategoryBadge({ category }: { category: EventItem['category'] }) {
 }
 
 function CalendarButtons({ event }: { event: EventItem }) {
-  const ics = typeof window !== 'undefined'
-    ? `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent(event))}`
-    : '#';
+  const ics = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent(event))}`;
+
   return (
     <div className="calButtons">
       <a href={googleCalUrl(event)} target="_blank" rel="noreferrer noopener" className="calBtn calBtn-google">
