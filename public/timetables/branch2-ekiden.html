@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新春駅伝大会 タイムテーブル（2026年度想定）</title>
+
+<style>
+  :root {
+    --navy: #102a43; --ink: #172033; --muted: #667085;
+    --branch: #16a34a; --branch-soft: #ecfdf3; --branch-line: #86efac;
+    --tokyo: #2563eb; --tokyo-soft: #eff6ff; --tokyo-line: #93c5fd;
+    --red: #d62828; --line: rgba(16,42,67,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui,-apple-system,sans-serif; background: #f4f7fb; color: var(--ink); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px 16px 48px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 18px;
+          padding: 8px 14px; border-radius: 999px; background: white;
+          border: 1px solid var(--line); text-decoration: none; color: var(--ink);
+          font-weight: 800; font-size: 0.85rem; }
+  .back:hover { background: #f0f4f8; }
+  .header { border-radius: 22px; padding: 20px; margin-bottom: 20px;
+             color: white; box-shadow: 0 8px 28px rgba(16,42,67,0.18); }
+  .header.branch { background: linear-gradient(135deg, #15803d, #16a34a); }
+  .header.tokyo  { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+  .header .cat { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+                 font-weight: 800; opacity: 0.8; margin-bottom: 6px; }
+  .header h1 { font-size: clamp(1.2rem, 5vw, 1.8rem); line-height: 1.25;
+               letter-spacing: -0.04em; margin-bottom: 6px; }
+  .header .meta { font-size: 0.9rem; opacity: 0.85; }
+  .notice { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px;
+            padding: 12px 16px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.6; color: #92400e; }
+  .section { background: white; border-radius: 18px; border: 1px solid var(--line);
+             box-shadow: 0 4px 16px rgba(16,42,67,0.07); margin-bottom: 16px; overflow: hidden; }
+  .section-title { padding: 14px 18px 0; font-size: 1rem; font-weight: 900;
+                   letter-spacing: 0.04em; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 14px; background: #f8fafc; border-bottom: 2px solid var(--line);
+       font-size: 0.78rem; font-weight: 900; letter-spacing: 0.06em;
+       color: var(--muted); text-align: left; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 0.9rem; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  .tag { display: inline-flex; padding: 3px 8px; border-radius: 999px;
+         font-size: 0.75rem; font-weight: 900; }
+  .tag-m { background: #dbeafe; color: #1e40af; }
+  .tag-f { background: #fce7f3; color: #9d174d; }
+  .tag-mf { background: #f3f4f6; color: #374151; }
+  .start-time { font-weight: 900; color: var(--navy); white-space: nowrap; }
+  .event-name { font-weight: 700; }
+  .note { font-size: 0.8rem; color: var(--muted); }
+  /* 競技種目リスト */
+  .event-grid { display: grid; gap: 10px; padding: 14px 18px 18px; }
+  @media (min-width: 500px) { .event-grid { grid-template-columns: 1fr 1fr; } }
+  .event-item { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px;
+                padding: 12px 14px; }
+  .event-item .ename { font-weight: 900; font-size: 0.95rem; margin-bottom: 2px; }
+  .event-item .edesc { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+  .track-label { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+                 border-radius: 6px; font-size: 0.7rem; font-weight: 900; margin-bottom: 6px; }
+  .track { background: #dbeafe; color: #1e40af; }
+  .field { background: #dcfce7; color: #14532d; }
+  .road  { background: #fef9c3; color: #713f12; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">&larr; 大会一覧に戻る</a>
+  <div class="header branch">
+    <p class="cat">第2支部 | 2026年度（2027/1/10）</p>
+    <h1>新春駅伝大会 タイムテーブル（2026年度想定）</h1>
+    <p class="meta">1/10(日)　📍会場未確定（要項で最終確認）</p>
+  </div>
+  <div class="notice">
+⚠️ <strong>2025年のタイムテーブルをもとに2026年を想定して作成しています。</strong><br>
+実際の競技日程は公式要項・第2支部サイトで必ず確認してください。
+</div>
+<div class="section">
+  <p class="section-title">当日スケジュール（1/10 日曜日）</p>
+  <table>
+    <thead><tr><th>開始</th><th>性別</th><th>種目</th><th>備考</th></tr></thead>
+    <tbody><tr><td class='start-time'>10:00</td><td><span class='tag tag-f'>女</span></td><td class='event-name'>女子駅伝</td><td class='note'>3区間（参考：2025年は3区間）</td></tr><tr><td class='start-time'>11:30</td><td><span class='tag tag-m'>男</span></td><td class='event-name'>男子駅伝</td><td class='note'>4区間（参考：2025年は4区間）</td></tr><tr><td class='start-time'>13:30</td><td><span class='tag tag-f'>女</span></td><td class='event-name'>女子3000m</td><td class='note'>〜3名</td></tr></tbody>
+  </table>
+</div>
+<div class="section">
+  <p class="section-title">当日の流れ（2025年度参考）</p>
+  <table>
+    <thead><tr><th>時刻</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="start-time">8:30</td><td>開門（100mスタート後方ゲート）</td></tr>
+      <tr><td class="start-time">8:40</td><td>参加校・学校受付開始</td></tr>
+      <tr><td class="start-time">8:55</td><td>駅伝参加校 学校受付終了</td></tr>
+      <tr><td class="start-time">9:00</td><td>駅伝参加校打ち合わせ</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="section">
+  <p class="section-title">駅伝の構成（参考：2025年）</p>
+  <table>
+    <thead><tr><th>種別</th><th>編成</th><th>区間</th></tr></thead>
+    <tbody>
+      <tr><td>男子駅伝</td><td>監督1名・選手4名・補欠2名</td><td>4区間</td></tr>
+      <tr><td>女子駅伝</td><td>監督1名・選手3名・補欠1名</td><td>3区間</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</body>
+</html>
