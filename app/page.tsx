@@ -183,6 +183,19 @@ function FlowRail({ title, category, items }: { title: string; category: EventIt
   );
 }
 
+// 第2支部・東京都中体連用のSVGアイコン（faviconなし）
+function TrackSVG({ color }: { color: string }) {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <ellipse cx="16" cy="16" rx="13" ry="9" stroke={color} strokeWidth="2.5" fill="none"/>
+      <ellipse cx="16" cy="16" rx="8" ry="4.5" stroke={color} strokeWidth="1.5" fill="none" strokeDasharray="3 2"/>
+      <circle cx="21" cy="11" r="2" fill={color}/>
+      <path d="M19 13.5c1-1.5 3-1 3.5.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+      <path d="M20.5 14c.5 1.5-.5 3-2 3" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 function LinkBanners() {
   const links = [
     {
@@ -190,37 +203,38 @@ function LinkBanners() {
       label: '東京都中体連',
       sub: '陸上競技専門部',
       color: '#2563eb',
-      icon: '🏟️',
+      faviconDomain: null, // faviconなし → SVG
     },
     {
       href: 'http://www.tokyokotairenrikujo.jp/branch23/branch2.html',
       label: '第2支部',
       sub: '東京校体連 陸上',
       color: '#16a34a',
-      icon: '🏃',
+      faviconDomain: null, // faviconなし → SVG
     },
     {
       href: 'https://toriku.or.jp/competition/',
-      label: '東京陸上競技協会',
+      label: '東京陸協',
       sub: '公認競技会情報',
       color: '#0369a1',
-      icon: '📋',
+      faviconDomain: 'toriku.or.jp',
     },
     {
       href: 'https://www.jaaf.or.jp/',
-      label: '日本陸上競技連盟',
-      sub: 'JAAF',
+      label: '日本陸連 JAAF',
+      sub: '日本陸上競技連盟',
       color: '#dc2626',
-      icon: '🇯🇵',
+      faviconDomain: 'jaaf.or.jp',
     },
     {
       href: 'https://worldathletics.org/',
       label: 'World Athletics',
       sub: '世界陸連',
       color: '#7c3aed',
-      icon: '🌍',
+      faviconDomain: 'worldathletics.org',
     },
   ];
+
   return (
     <section className="bannerSection">
       <div className="sectionTitle">
@@ -231,7 +245,19 @@ function LinkBanners() {
         {links.map((l) => (
           <a key={l.href} href={l.href} target="_blank" rel="noreferrer noopener"
             className="bannerCard" style={{ '--accent': l.color } as React.CSSProperties}>
-            <span className="bannerIcon">{l.icon}</span>
+            <span className="bannerIconWrap">
+              {l.faviconDomain ? (
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${l.faviconDomain}&sz=64`}
+                  alt={l.label}
+                  width="32"
+                  height="32"
+                  className="bannerFavicon"
+                />
+              ) : (
+                <TrackSVG color={l.color} />
+              )}
+            </span>
             <span className="bannerLabel">{l.label}</span>
             <span className="bannerSub">{l.sub}</span>
           </a>
