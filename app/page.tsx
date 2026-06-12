@@ -1,363 +1,346 @@
-'use client';
+"use client";
 
-import eventsData from '../data/events.json';
+/**
+ * 大会日程（SCHEDULE）ページ
+ * 配置: app/page.tsx ※既存の中身をすべてこのファイルで置き換え
+ * レコードページとデザイン統一。NEXT EVENTを電光掲示板スタイルで表示。
+ */
 
-type EventItem = {
-  id: string;
-  category: '第2支部' | '東京都中体連';
-  season: string;
-  name: string;
-  shortName: string;
-  startDate: string;
-  endDate: string;
-  dateLabel: string;
-  venue: string;
-  summary: string;
-  officialUrl: string;
-  guidelineUrl: string;
-  timetablePageUrl: string | null;
-  timetableUrl: string;
-  resultUrl: string;
-  eventsPageUrl: string;
-  mapUrl: string;
+import React, { useMemo, useEffect, useState } from "react";
+
+const C = {
+  bg: "#EDEFF2", ink: "#171A20", sub: "#5C636E",
+  tartan: "#E04E1C", tartanDeep: "#B23A12", lane: "#FFFFFF",
+  board: "#14161B", led: "#FFC233", ledDim: "#7A6021", grid: "#D8DBE0",
+  branch: "#1E7A5E", // 第2支部
 };
+const fontDisplay = "'Bebas Neue', 'Noto Sans JP', sans-serif";
+const fontMono = "'IBM Plex Mono', monospace";
+const fontBody = "'Noto Sans JP', sans-serif";
+type Any = any;
 
-const events = eventsData as EventItem[];
+/* ---------- 大会データ（2026年度） ---------- */
+const MEETS = [
+  {
+    id: "branch2-spring", cat: "第2支部", season: "春",
+    title: "第2支部春季陸上競技会",
+    dates: "4/3(金)・4/4(土)", start: "20260403", end: "20260405",
+    venue: "スピアーズえどりくフィールド（江戸川区陸上競技場）",
+    desc: "第2支部の春シーズン最初の競技会。年度初めの記録確認に使いやすい大会です。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/01_syunki/kyougi.html",
+  },
+  {
+    id: "branch2-qualifier", cat: "第2支部", season: "春",
+    title: "第2支部支部予選会",
+    dates: "4/18(土)・4/19(日)", start: "20260418", end: "20260420",
+    venue: "スピアーズえどりくフィールド（江戸川区陸上競技場）",
+    desc: "第2支部の予選大会。春から初夏の東京都大会につながる重要な大会です。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/02_sotai/kyougi.html",
+  },
+  {
+    id: "tokyo-regional", cat: "東京都中体連", season: "春",
+    title: "地域別陸上競技大会",
+    dates: "5/16(土)・5/17(日)・6/6(土)・6/7(日)", start: "20260516", end: "20260608",
+    venue: "夢の島競技場",
+    desc: "東京都中体連の地域別大会。文京区は区部西部に含まれます。",
+    youkou: "https://www.tokyoctr.com/youkou/chiiki2.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "tokyo-tsushin", cat: "東京都中体連", season: "夏",
+    title: "第72回 全日本中学校通信陸上競技東京都大会",
+    dates: "6/27(土)・6/28(日)", start: "20260627", end: "20260629",
+    venue: "上柚木公園陸上競技場",
+    desc: "全国通信陸上につながる東京都大会。ランキング確認にも使われる大会です。",
+    youkou: "https://www.tokyoctr.com/youkou/tuushin.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "tokyo-sotai", cat: "東京都中体連", season: "夏",
+    title: "第65回 東京都中学校総合体育大会 陸上競技大会 兼 第79回 東京都中学校陸上競技選手権大会",
+    dates: "7/24(金)・7/25(土)・7/26(日)", start: "20260724", end: "20260727",
+    venue: "上柚木公園陸上競技場",
+    desc: "東京都中学校総合体育大会と東京都中学校陸上競技選手権大会を兼ねる主要大会です。",
+    youkou: "https://www.tokyoctr.com/youkou/sou.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "branch2-summer", cat: "第2支部", season: "夏",
+    title: "第2支部夏季競技会",
+    dates: "8/10(月)・8/12(水)・8/13(木)", start: "20260810", end: "20260814",
+    venue: "スピアーズえどりくフィールド（江戸川区陸上競技場）",
+    desc: "夏休み期間の第2支部競技会。秋の大会に向けた記録確認にも使いやすい大会です。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/04_kaki/kyougi.html",
+  },
+  {
+    id: "branch2-rookie", cat: "第2支部", season: "夏",
+    title: "第2支部新人陸上競技会",
+    dates: "8/26(水)・8/29(土)・8/30(日)", start: "20260826", end: "20260831",
+    venue: "スピアーズえどりくフィールド（江戸川区陸上競技場）",
+    desc: "第2支部の新人大会。秋の新人戦シーズンにつながる大会です。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/05_shinjin/kyougi.html",
+  },
+  {
+    id: "tokyo-shibu-taiko", cat: "東京都中体連", season: "秋",
+    title: "第79回 東京都中学校支部対抗陸上競技選手権大会",
+    dates: "10/3(土)・10/4(日)", start: "20261003", end: "20261005",
+    venue: "駒沢オリンピック公園総合運動場陸上競技場",
+    desc: "東京陸協の2026年度公認競技会日程に掲載されている支部対抗大会です。",
+    youkou: "https://www.tokyoctr.com/youkou/shibu.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "branch2-autumn", cat: "第2支部", season: "秋",
+    title: "第2支部秋季競技会",
+    dates: "11/14(土)・11/15(日)", start: "20261114", end: "20261116",
+    venue: "夢の島競技場",
+    desc: "第2支部の秋季競技会。第2支部サイトでは11/14・11/15、会場は夢の島とされています。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/06_syuki/kyougi.html",
+  },
+  {
+    id: "branch2-ekiden", cat: "第2支部", season: "冬",
+    title: "第2支部新春駅伝大会",
+    dates: "2027/1/16(金) ※要項で最終確認", start: "20270116", end: "20270117",
+    venue: "会場未確定",
+    desc: "第2支部の冬季駅伝大会。詳細は支部サイトの要項で確認してください。",
+    youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
+    results: "http://www.tokyokotairenrikujo.jp/branch23/2026/SL/07_ekiden/kyougi.html",
+  },
+];
 
-function startOfTokyoToday() {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  });
-  return new Date(`${formatter.format(now)}T00:00:00+09:00`);
-}
+const LINKS = [
+  { name: "東京都中体連 陸上競技専門部", url: "https://www.tokyoctr.com/youkou.htm" },
+  { name: "第2支部 東京校体連 陸上", url: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html" },
+  { name: "東京陸協 公認競技会情報", url: "https://toriku.or.jp/competition/" },
+  { name: "日本陸連 JAAF", url: "https://www.jaaf.or.jp/" },
+  { name: "World Athletics", url: "https://worldathletics.org/" },
+];
 
-function daysUntil(dateText: string) {
-  const today = startOfTokyoToday();
-  const target = new Date(`${dateText}T00:00:00+09:00`);
-  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+/* ---------- helpers ---------- */
+const eventsUrl = (m: Any) => `/events/${m.id}.html`;
+const timetableUrl = (m: Any) => `/timetables/${m.id}.html`;
+const mapUrl = (m: Any) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.venue)}`;
+const gcalUrl = (m: Any) =>
+  `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(m.title)}&dates=${m.start}/${m.end}&location=${encodeURIComponent(m.venue)}&details=${encodeURIComponent(m.youkou)}`;
+const icsUrl = (m: Any) =>
+  "data:text/calendar;charset=utf-8," + encodeURIComponent(
+    `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//junior-track-field//JA\nBEGIN:VEVENT\nUID:${m.id}@junior-track-field\nDTSTART;VALUE=DATE:${m.start}\nDTEND;VALUE=DATE:${m.end}\nSUMMARY:${m.title}\nLOCATION:${m.venue}\nDESCRIPTION:${m.youkou}\nEND:VEVENT\nEND:VCALENDAR`);
+const toDate = (s: string) => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+const catColor = (cat: string) => (cat === "第2支部" ? C.branch : C.tartan);
 
-function getNextEvent() {
-  const tomorrow = new Date(startOfTokyoToday());
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return [...events]
-    .filter((e) => new Date(`${e.startDate}T00:00:00+09:00`) >= tomorrow)
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
-}
+/* ---------- 共通ナビ ---------- */
+const SiteNav = ({ active }: Any) => (
+  <nav style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+    {[["/", "SCHEDULE", "大会日程"], ["/records", "RECORDS", "記録データベース"]].map(([href, en, ja]) => {
+      const on = active === en;
+      return (
+        <a key={en} href={href} style={{
+          textDecoration: "none", display: "inline-flex", alignItems: "baseline", gap: 8,
+          padding: "9px 20px", borderRadius: 12,
+          background: on ? C.ink : "#fff", color: on ? "#fff" : C.sub,
+          boxShadow: on ? "0 6px 16px rgba(23,26,32,.22)" : "0 1px 3px rgba(23,26,32,.08)",
+          transition: "all .25s cubic-bezier(.4,0,.2,1)",
+        }}>
+          <span style={{ fontFamily: fontDisplay, fontSize: 19, letterSpacing: ".05em" }}>{en}</span>
+          <span style={{ fontFamily: fontBody, fontSize: 11, fontWeight: 600 }}>{ja}</span>
+        </a>
+      );
+    })}
+  </nav>
+);
 
-// Googleカレンダー用URL生成
-function googleCalUrl(event: EventItem) {
-  const fmt = (d: string) => d.replace(/-/g, '');
-  const end = new Date(event.endDate);
-  end.setDate(end.getDate() + 1);
-  const endStr = end.toISOString().slice(0, 10).replace(/-/g, '');
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: event.name,
-    dates: `${fmt(event.startDate)}/${endStr}`,
-    location: event.venue,
-    details: `第2支部・東京都中体連 陸上競技大会\n${event.guidelineUrl}`,
-  });
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
+/* ---------- リンクボタン ---------- */
+const LinkBtn = ({ href, children, external, accent }: Any) => (
+  <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}
+    style={{
+      textDecoration: "none", display: "inline-block",
+      padding: "7px 14px", borderRadius: 999,
+      fontFamily: fontBody, fontSize: 12, fontWeight: 600,
+      border: `1.5px solid ${accent ? C.ink : C.grid}`,
+      background: accent ? C.ink : "#fff", color: accent ? "#fff" : C.ink,
+      transition: "all .2s",
+    }}>
+    {children}{external ? " ↗" : " →"}
+  </a>
+);
 
-// iCal(.ics)用データURL生成
-function icsContent(event: EventItem) {
-  const fmt = (d: string) => d.replace(/-/g, '');
-  const end = new Date(event.endDate);
-  end.setDate(end.getDate() + 1);
-  const endStr = end.toISOString().slice(0, 10).replace(/-/g, '');
-  const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//junior-track-field//JA',
-    'BEGIN:VEVENT',
-    `UID:${event.id}@junior-track-field`,
-    `DTSTAMP:${now}`,
-    `DTSTART;VALUE=DATE:${fmt(event.startDate)}`,
-    `DTEND;VALUE=DATE:${endStr}`,
-    `SUMMARY:${event.name}`,
-    `LOCATION:${event.venue}`,
-    `DESCRIPTION:${event.guidelineUrl}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n');
-}
-
-function VenueIcon({ className }: { className?: string }) {
-  return (
-    <svg className={`venueIcon ${className ?? ''}`} viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-      <circle cx="12" cy="9" r="2.5" />
-    </svg>
-  );
-}
-
-function ExternalLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer noopener" className={`actionButton ${className ?? ''}`}>
-      {children} <span aria-hidden="true">↗</span>
-    </a>
-  );
-}
-
-function InternalLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer noopener" className={`actionButton ${className ?? ''}`}>
-      {children} <span aria-hidden="true">→</span>
-    </a>
-  );
-}
-
-function CategoryBadge({ category }: { category: EventItem['category'] }) {
-  return <span className={`badge ${category === '第2支部' ? 'branch' : 'tokyo'}`}>{category}</span>;
-}
-
-function CalendarButtons({ event }: { event: EventItem }) {
-  const ics = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent(event))}`;
-
-  return (
-    <div className="calButtons">
-      <a href={googleCalUrl(event)} target="_blank" rel="noreferrer noopener" className="calBtn calBtn-google">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-          <path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"/>
-        </svg>
-        Googleカレンダー
-      </a>
-      <a href={ics} download={`${event.id}.ics`} className="calBtn calBtn-apple">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-        </svg>
-        Appleカレンダー
-      </a>
-    </div>
-  );
-}
-
-function EventCard({ event }: { event: EventItem }) {
-  const categoryClass = event.category === '第2支部' ? 'branchCard' : 'tokyoCard';
-  const colorClass = event.category === '第2支部' ? 'branch' : 'tokyo';
-  return (
-    <article className={`eventCard ${categoryClass}`}>
-      <div className="eventCardTop">
-        <CategoryBadge category={event.category} />
-        <span className="seasonTag">{event.season}</span>
-      </div>
-      <p className="dateLabel">{event.dateLabel}</p>
-      <h3>{event.name}</h3>
-      <p className="venue"><VenueIcon /> {event.venue}</p>
-      <p className="summary">{event.summary}</p>
-      <div className="buttonGrid">
-        <InternalLink href={event.eventsPageUrl} className={`highlight ${colorClass}`}>競技種目</InternalLink>
-        {event.timetablePageUrl
-          ? <InternalLink href={event.timetablePageUrl} className={`highlight ${colorClass}`}>タイムテーブル</InternalLink>
-          : <ExternalLink href={event.timetableUrl}>タイムテーブル</ExternalLink>}
-        <ExternalLink href={event.guidelineUrl}>要項</ExternalLink>
-        <ExternalLink href={event.resultUrl}>結果</ExternalLink>
-        <ExternalLink href={event.mapUrl}>マップ</ExternalLink>
-      </div>
-      <CalendarButtons event={event} />
-    </article>
-  );
-}
-
-function FlowRail({ title, category, items }: { title: string; category: EventItem['category']; items: string[] }) {
-  return (
-    <section className={`flowRail ${category === '第2支部' ? 'branchFlow' : 'tokyoFlow'}`}>
-      <div className="flowHeader">
-        <CategoryBadge category={category} />
-        <h3>{title}</h3>
-      </div>
-      <div className="flowItems">
-        {items.map((item, index) => (
-          <div className="flowItem" key={item}>
-            <span>{item}</span>
-            {index < items.length - 1 && <b aria-hidden="true">→</b>}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// 第2支部・東京都中体連用のSVGアイコン（faviconなし）
-function TrackSVG({ color }: { color: string }) {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <ellipse cx="16" cy="16" rx="13" ry="9" stroke={color} strokeWidth="2.5" fill="none"/>
-      <ellipse cx="16" cy="16" rx="8" ry="4.5" stroke={color} strokeWidth="1.5" fill="none" strokeDasharray="3 2"/>
-      <circle cx="21" cy="11" r="2" fill={color}/>
-      <path d="M19 13.5c1-1.5 3-1 3.5.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-      <path d="M20.5 14c.5 1.5-.5 3-2 3" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function LinkBanners() {
-  const links = [
-    {
-      href: 'https://www.tokyoctr.com/youkou.htm',
-      label: '東京都中体連',
-      sub: '陸上競技専門部',
-      color: '#2563eb',
-      faviconDomain: null, // faviconなし → SVG
-    },
-    {
-      href: 'http://www.tokyokotairenrikujo.jp/branch23/branch2.html',
-      label: '第2支部',
-      sub: '東京校体連 陸上',
-      color: '#16a34a',
-      faviconDomain: null, // faviconなし → SVG
-    },
-    {
-      href: 'https://toriku.or.jp/competition/',
-      label: '東京陸協',
-      sub: '公認競技会情報',
-      color: '#0369a1',
-      faviconDomain: 'toriku.or.jp',
-    },
-    {
-      href: 'https://www.jaaf.or.jp/',
-      label: '日本陸連 JAAF',
-      sub: '日本陸上競技連盟',
-      color: '#dc2626',
-      faviconDomain: 'jaaf.or.jp',
-    },
-    {
-      href: 'https://worldathletics.org/',
-      label: 'World Athletics',
-      sub: '世界陸連',
-      color: '#7c3aed',
-      faviconDomain: 'worldathletics.org',
-    },
-  ];
-
-  return (
-    <section className="bannerSection">
-      <div className="sectionTitle">
-        <p className="eyebrow dark">Links</p>
-        <h2>関連サイト</h2>
-      </div>
-      <div className="bannerGrid">
-        {links.map((l) => (
-          <a key={l.href} href={l.href} target="_blank" rel="noreferrer noopener"
-            className="bannerCard" style={{ '--accent': l.color } as React.CSSProperties}>
-            <span className="bannerIconWrap">
-              {l.faviconDomain ? (
-                <img
-                  src={`https://www.google.com/s2/favicons?domain=${l.faviconDomain}&sz=64`}
-                  alt={l.label}
-                  width="32"
-                  height="32"
-                  className="bannerFavicon"
-                />
-              ) : (
-                <TrackSVG color={l.color} />
-              )}
-            </span>
-            <span className="bannerLabel">{l.label}</span>
-            <span className="bannerSub">{l.sub}</span>
-          </a>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export default function Home() {
-  const nextEvent = getNextEvent();
-  const sortedEvents = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  const remainingDays = nextEvent ? daysUntil(nextEvent.startDate) : null;
-  const nextColorClass = nextEvent?.category === '第2支部' ? 'branch' : 'tokyo';
-
-  return (
-    <main>
-      <header className="hero">
-        <div className="heroInner">
-          <p className="eyebrow">2026 Season</p>
-          <h1>中学陸上競技部</h1>
-          <p className="lead">次の大会・要項・タイムテーブル・結果・会場を確認するためのページです。</p>
-          <div className="heroPills" aria-label="サイト機能">
-            <span>大会日程</span>
-            <span>競技種目</span>
-            <span>タイムテーブル</span>
-            <span>要項</span>
-            <span>結果</span>
-            <span>マップ</span>
-            <span>カレンダー登録</span>
-          </div>
+/* ---------- NEXT EVENT 電光掲示板 ---------- */
+const NextEventBoard = ({ meet, days }: Any) => (
+  <div style={{ background: C.board, borderRadius: 20, padding: "26px 28px", boxShadow: "0 18px 40px rgba(20,22,27,.28)", position: "relative", overflow: "hidden" }}>
+    <div style={{ position: "absolute", inset: 0, opacity: 0.07, pointerEvents: "none", background: `repeating-linear-gradient(105deg, transparent 0 90px, ${C.lane} 90px 92px)` }} />
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center" }}>
+      <div style={{ flex: "1 1 380px", minWidth: 0 }}>
+        <div style={{ fontFamily: fontBody, fontSize: 11, letterSpacing: "0.22em", color: "#8A92A0", marginBottom: 8 }}>
+          NEXT EVENT — {meet.cat}
         </div>
-      </header>
-
-      <section className="nextEvent" aria-labelledby="next-event-title">
-        <div className="nextLabel">NEXT EVENT</div>
-        {nextEvent ? (
-          <div className={`nextCard ${nextEvent.category === '第2支部' ? 'branchNext' : 'tokyoNext'}`}>
-            <div>
-              <CategoryBadge category={nextEvent.category} />
-              <h2 id="next-event-title">{nextEvent.name}</h2>
-              <p className="nextDate">{nextEvent.dateLabel}</p>
-              <p className="venue big"><VenueIcon /> {nextEvent.venue}</p>
-            </div>
-            <div className="countdown">
-              <span>あと</span>
-              <strong>{remainingDays}</strong>
-              <span>日</span>
-            </div>
-            <div className="buttonGrid nextButtons">
-              <InternalLink href={nextEvent.eventsPageUrl} className={`highlight ${nextColorClass}`}>競技種目</InternalLink>
-              {nextEvent.timetablePageUrl
-                ? <InternalLink href={nextEvent.timetablePageUrl} className={`highlight ${nextColorClass}`}>タイムテーブル</InternalLink>
-                : <ExternalLink href={nextEvent.timetableUrl}>タイムテーブル</ExternalLink>}
-              <ExternalLink href={nextEvent.guidelineUrl}>要項</ExternalLink>
-              <ExternalLink href={nextEvent.resultUrl}>結果</ExternalLink>
-              <ExternalLink href={nextEvent.mapUrl}>マップ</ExternalLink>
-            </div>
-            <CalendarButtons event={nextEvent} />
-          </div>
-        ) : (
-          <div className="nextCard"><h2 id="next-event-title">次の大会は未登録です</h2></div>
-        )}
-      </section>
-
-      <section className="section" aria-labelledby="flow-title">
-        <div className="sectionTitle">
-          <p className="eyebrow dark">Season Flow</p>
-          <h2 id="flow-title">年間の流れ</h2>
-          <p>流れはカテゴリ別に整理し、大会カードは下に日程順で並べています。</p>
+        <h2 style={{ fontFamily: fontBody, fontSize: "clamp(17px,2.6vw,23px)", fontWeight: 800, color: "#EDEFF2", margin: 0, lineHeight: 1.45 }}>
+          {meet.title}
+        </h2>
+        <div style={{ fontFamily: fontBody, fontSize: 13, color: "#B7BDC8", marginTop: 10 }}>
+          {meet.dates}　{meet.venue}
         </div>
-        <div className="flowGrid">
-          <FlowRail title="第2支部大会" category="第2支部" items={['春季', '支部予選', '夏季', '支部新人', '秋季', '新春駅伝']} />
-          <FlowRail title="東京都中体連大会" category="東京都中体連" items={['地域別', '通信', '都総体', '支部対抗']} />
-        </div>
-      </section>
-
-      <section className="section" id="schedule" aria-labelledby="schedule-title">
-        <div className="sectionTitle">
-          <p className="eyebrow dark">Schedule</p>
-          <h2 id="schedule-title">大会一覧</h2>
-          <p>すべて日程順に表示しています。緑は第2支部、青は東京都中体連です。</p>
-        </div>
-        <div className="eventList">
-          {sortedEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
+          {[
+            ["競技種目", eventsUrl(meet), false],
+            ["タイムテーブル", timetableUrl(meet), false],
+            ["要項", meet.youkou, true],
+            ["結果", meet.results, true],
+            ["マップ", mapUrl(meet), true],
+          ].map(([label, href, ext]: Any) => (
+            <a key={label} href={href} target={ext ? "_blank" : undefined} rel={ext ? "noopener noreferrer" : undefined}
+              style={{ textDecoration: "none", padding: "7px 14px", borderRadius: 999, fontFamily: fontBody, fontSize: 12, fontWeight: 600, border: "1.5px solid #3A3F49", color: "#EDEFF2", transition: "all .2s" }}>
+              {label}{ext ? " ↗" : " →"}
+            </a>
           ))}
         </div>
-      </section>
-
-      <div className="bannerSection section">
-        <LinkBanners />
       </div>
+      <div style={{ textAlign: "center", paddingRight: 6 }}>
+        <div style={{ fontFamily: fontBody, fontSize: 11, letterSpacing: ".22em", color: "#717A88" }}>COUNTDOWN</div>
+        <div style={{ fontFamily: fontMono, fontSize: "clamp(46px,8vw,76px)", fontWeight: 600, color: C.led, lineHeight: 1.05, textShadow: `0 0 24px ${C.led}55`, fontVariantNumeric: "tabular-nums" }}>
+          {days >= 0 ? days : 0}
+        </div>
+        <div style={{ fontFamily: fontBody, fontSize: 12, color: "#B7BDC8" }}>
+          {days > 0 ? "DAYS TO GO" : "開催中"}
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 12, justifyContent: "center" }}>
+          <a href={gcalUrl(meet)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", fontFamily: fontBody, fontSize: 11, color: "#9AA1AC", border: "1px solid #3A3F49", borderRadius: 999, padding: "5px 10px" }}>Gカレンダー</a>
+          <a href={icsUrl(meet)} download={`${meet.id}.ics`} style={{ textDecoration: "none", fontFamily: fontBody, fontSize: 11, color: "#9AA1AC", border: "1px solid #3A3F49", borderRadius: 999, padding: "5px 10px" }}>Apple</a>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
-      <section className="comingSoon">
-        <p className="eyebrow dark">Coming Soon</p>
-        <h2>記録データ化に向けて</h2>
-        <p>将来的に、結果PDFをデータ化して、選手名・学校名・種目・記録で検索できるサイトへ拡張できます。</p>
-      </section>
-    </main>
+/* ---------- 大会カード ---------- */
+const MeetCard = ({ m, isNext }: Any) => (
+  <article style={{
+    background: "#fff", borderRadius: 18, padding: "20px 24px",
+    boxShadow: "0 2px 6px rgba(23,26,32,.06), 0 12px 30px rgba(23,26,32,.06)",
+    borderLeft: `5px solid ${catColor(m.cat)}`,
+    opacity: 1,
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+      <span style={{ fontFamily: fontBody, fontSize: 10.5, fontWeight: 700, letterSpacing: ".08em", color: "#fff", background: catColor(m.cat), borderRadius: 6, padding: "3px 9px" }}>
+        {m.cat}・{m.season}
+      </span>
+      <span style={{ fontFamily: fontMono, fontSize: 13, color: C.ink, fontWeight: 600 }}>{m.dates}</span>
+      {isNext && <span style={{ fontFamily: fontBody, fontSize: 10.5, fontWeight: 700, color: C.tartan, border: `1.5px solid ${C.tartan}`, borderRadius: 6, padding: "2px 8px" }}>NEXT</span>}
+    </div>
+    <h3 style={{ fontFamily: fontBody, fontSize: 16.5, fontWeight: 800, margin: "0 0 4px", lineHeight: 1.5 }}>{m.title}</h3>
+    <div style={{ fontFamily: fontBody, fontSize: 12.5, color: C.sub, marginBottom: 8 }}>{m.venue}</div>
+    <p style={{ fontFamily: fontBody, fontSize: 12.5, color: C.sub, margin: "0 0 14px", lineHeight: 1.7 }}>{m.desc}</p>
+    <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+      <LinkBtn href={eventsUrl(m)} accent>競技種目</LinkBtn>
+      <LinkBtn href={timetableUrl(m)}>タイムテーブル</LinkBtn>
+      <LinkBtn href={m.youkou} external>要項</LinkBtn>
+      <LinkBtn href={m.results} external>結果</LinkBtn>
+      <LinkBtn href={mapUrl(m)} external>マップ</LinkBtn>
+      <LinkBtn href={gcalUrl(m)} external>Gカレンダー</LinkBtn>
+      <a href={icsUrl(m)} download={`${m.id}.ics`} style={{ textDecoration: "none", padding: "7px 14px", borderRadius: 999, fontFamily: fontBody, fontSize: 12, fontWeight: 600, border: `1.5px solid ${C.grid}`, background: "#fff", color: C.ink }}>Appleカレンダー ↓</a>
+    </div>
+  </article>
+);
+
+/* ---------- セクション見出し ---------- */
+const SectionTitle = ({ en, ja }: Any) => (
+  <div style={{ margin: "44px 0 16px", display: "flex", alignItems: "baseline", gap: 12 }}>
+    <h2 style={{ fontFamily: fontDisplay, fontSize: 30, margin: 0, letterSpacing: ".03em", color: C.ink }}>{en}</h2>
+    <span style={{ fontFamily: fontBody, fontSize: 13, fontWeight: 600, color: C.sub }}>{ja}</span>
+  </div>
+);
+
+/* ---------- メイン ---------- */
+export default function SchedulePage() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
+
+  const next = useMemo(() => {
+    if (!now) return null;
+    const upcoming = MEETS.filter((m) => toDate(m.end) >= now)
+      .sort((a, b) => +toDate(a.start) - +toDate(b.start));
+    return upcoming[0] || MEETS[MEETS.length - 1];
+  }, [now]);
+  const days = useMemo(() => {
+    if (!now || !next) return 0;
+    return Math.ceil((+toDate(next.start) - +now) / 86400000);
+  }, [now, next]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: fontBody, color: C.ink }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        @keyframes rise { from { opacity:0; transform:translateY(14px);} to { opacity:1; transform:none;} }
+        .rise { animation: rise .55s cubic-bezier(.22,1,.36,1) both; }
+        @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+        a:focus-visible { outline: 3px solid ${C.tartan}; outline-offset: 2px; }
+        a:hover { opacity: .92; }
+      `}</style>
+
+      <div style={{ maxWidth: 1040, margin: "0 auto", padding: "28px 20px 60px" }}>
+        <SiteNav active="SCHEDULE" />
+
+        <header className="rise" style={{ marginBottom: 26 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap" }}>
+            <h1 style={{ fontFamily: fontDisplay, fontSize: "clamp(40px,6vw,60px)", margin: 0, letterSpacing: ".02em", lineHeight: 1 }}>
+              2026 <span style={{ color: C.tartan }}>SEASON</span> SCHEDULE
+            </h1>
+            <p style={{ margin: 0, fontSize: 13, color: C.sub, fontWeight: 500 }}>中学陸上競技部 大会日程</p>
+          </div>
+        </header>
+
+        {next && (
+          <div className="rise" style={{ animationDelay: ".08s" }}>
+            <NextEventBoard meet={next} days={days} />
+          </div>
+        )}
+
+        <SectionTitle en="SEASON FLOW" ja="年間の流れ" />
+        <div className="rise" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[
+            { cat: "第2支部", flow: ["春季", "支部予選", "夏季", "支部新人", "秋季", "新春駅伝"] },
+            { cat: "東京都中体連", flow: ["地域別", "通信", "都総体", "支部対抗"] },
+          ].map(({ cat, flow }) => (
+            <div key={cat} style={{ background: "#fff", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", boxShadow: "0 1px 3px rgba(23,26,32,.08)" }}>
+              <span style={{ fontFamily: fontBody, fontSize: 11, fontWeight: 700, color: "#fff", background: catColor(cat), borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap" }}>{cat}</span>
+              {flow.map((f, i) => (
+                <React.Fragment key={f}>
+                  {i > 0 && <span style={{ color: C.grid, fontFamily: fontMono }}>→</span>}
+                  <span style={{ fontFamily: fontBody, fontSize: 13, fontWeight: 600 }}>{f}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <SectionTitle en="ALL EVENTS" ja="大会一覧（日程順）" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {MEETS.map((m, i) => (
+            <div key={m.id} className="rise" style={{ animationDelay: `${0.04 * i}s` }}>
+              <MeetCard m={m} isNext={next && m.id === next.id} />
+            </div>
+          ))}
+        </div>
+
+        <SectionTitle en="LINKS" ja="関連サイト" />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {LINKS.map((l) => (
+            <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer"
+              style={{ textDecoration: "none", background: "#fff", color: C.ink, borderRadius: 12, padding: "12px 18px", fontFamily: fontBody, fontSize: 13, fontWeight: 600, boxShadow: "0 1px 3px rgba(23,26,32,.08)" }}>
+              {l.name} ↗
+            </a>
+          ))}
+        </div>
+
+        <footer style={{ marginTop: 44, fontSize: 11.5, color: C.sub, lineHeight: 1.9 }}>
+          日程・会場は主催者の発表に基づきます。最新情報は必ず各大会の要項でご確認ください。
+        </footer>
+      </div>
+    </div>
   );
 }
