@@ -41,11 +41,11 @@ const MEETS = [
   },
   {
     id: "tokyo-regional", cat: "東京都中体連", season: "春",
-    title: "地域別陸上競技大会",
-    dates: "5/16(土)・5/17(日)・6/6(土)・6/7(日)", start: "20260516", end: "20260608",
-    venue: "夢の島競技場",
-    desc: "東京都中体連の地域別大会。文京区は区部西部に含まれます。",
-    youkou: "https://www.tokyoctr.com/youkou/chiiki2.pdf",
+    title: "第77回 東京都中学校地域別陸上競技大会",
+    dates: "多摩 5/9(土)・5/10(日)／区部 5/16(土)・5/17(日) ほか3・4日目 5/30・31", start: "20260509", end: "20260601",
+    venue: "多摩: 上柚木公園陸上競技場／区部: 夢の島競技場",
+    desc: "東京都中体連の地域別大会。記録会形式で行われ、ここで標準記録突破または入賞すると通信・総体（都大会）への出場資格が得られます。",
+    youkou: "https://www.tokyoctr.com/youkou/chiiki.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -63,7 +63,7 @@ const MEETS = [
     dates: "7/24(金)・7/25(土)・7/26(日)", start: "20260724", end: "20260727",
     venue: "上柚木公園陸上競技場",
     desc: "東京都中学校総合体育大会と東京都中学校陸上競技選手権大会を兼ねる主要大会です。",
-    youkou: "https://www.tokyoctr.com/youkou/sou.pdf",
+    youkou: "https://www.tokyoctr.com/youkou/soutai.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -89,7 +89,7 @@ const MEETS = [
     title: "第79回 東京都中学校支部対抗陸上競技選手権大会",
     dates: "10/3(土)・10/4(日)", start: "20261003", end: "20261005",
     venue: "駒沢オリンピック公園総合運動場陸上競技場",
-    desc: "東京陸協の2026年度公認競技会日程に掲載されている支部対抗大会です。",
+    desc: "令和8年度の競技大会実施種目表に掲載されている支部対抗大会。支部対抗は学校の市区町村ごとの地域所属で出場します。",
     youkou: "https://www.tokyoctr.com/youkou/shibu.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
@@ -105,7 +105,7 @@ const MEETS = [
   {
     id: "branch2-ekiden", cat: "第2支部", season: "冬",
     title: "第2支部新春駅伝大会",
-    dates: "2027/1/16(金) ※要項で最終確認", start: "20270116", end: "20270117",
+    dates: "2027/1/16(土) ※要項で最終確認", start: "20270116", end: "20270117",
     venue: "会場未確定",
     desc: "第2支部の冬季駅伝大会。詳細は支部サイトの要項で確認してください。",
     youkou: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html",
@@ -115,6 +115,7 @@ const MEETS = [
 
 const LINKS = [
   { name: "東京都中体連 陸上競技専門部", url: "https://www.tokyoctr.com/youkou.htm" },
+  { name: "第2・3支部 東京校体連 陸上", url: "http://www.tokyokotairenrikujo.jp/branch23/branch23.html" },
   { name: "第2支部 東京校体連 陸上", url: "http://www.tokyokotairenrikujo.jp/branch23/branch2.html" },
   { name: "東京陸協 公認競技会情報", url: "https://toriku.or.jp/competition/" },
   { name: "日本陸連 JAAF", url: "https://www.jaaf.or.jp/" },
