@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * 東京都中学女子100m 記録ダッシュボード v2
+ * 東京都中学女子100m 記録ダッシュボード v3
  * 配置: app/records/page.tsx
- * v2: 共通ナビ / 大会別タブ / 学校別タブ を追加
+ * v3: タブ再編 / 大会別=全出場者+フィルター / 相互リンク / 成長の予想 を追加
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -81,6 +81,13 @@ const Chip = ({ on, children, onClick }: Any) => (
   }}>{children}</button>
 );
 
+const LinkCell = ({ onClick, children }: Any) => (
+  <span onClick={(e: Any) => { e.stopPropagation(); onClick(); }}
+    style={{ cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 3, color: C.ink }}>
+    {children}
+  </span>
+);
+
 const ChartTooltip = ({ active, payload, label, unit = "秒" }: Any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -98,8 +105,9 @@ const ChartTooltip = ({ active, payload, label, unit = "秒" }: Any) => {
 const Td = ({ children, mono, dim, bold }: Any) => (
   <td style={{ padding: "8px 12px", whiteSpace: "nowrap", fontFamily: mono ? fontMono : fontBody, color: dim ? C.sub : C.ink, fontWeight: bold ? 600 : 400 }}>{children}</td>
 );
-const ResultTable = ({ rows, showYear }: Any) => (
-  <div style={{ maxHeight: 460, overflowY: "auto", border: `1px solid ${C.grid}`, borderRadius: 12 }}>
+
+const ResultTable = ({ rows, showYear, onName, onSchool }: Any) => (
+  <div style={{ maxHeight: 480, overflowY: "auto", border: `1px solid ${C.grid}`, borderRadius: 12 }}>
     <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: fontBody, fontSize: 13 }}>
       <thead>
         <tr style={{ position: "sticky", top: 0, background: "#fff", boxShadow: `0 1px 0 ${C.grid}`, zIndex: 1 }}>
@@ -114,9 +122,9 @@ const ResultTable = ({ rows, showYear }: Any) => (
             <Td mono>{r.rank ?? i + 1}</Td>
             <Td mono bold>{r.time.toFixed(2)}{r.legal === 0 && <span style={{ color: C.tartan, fontSize: 10, marginLeft: 3 }}>追参</span>}</Td>
             <Td mono dim>{windStr(r.wind)}</Td>
-            <Td>{r.name}</Td>
+            <Td>{onName ? <LinkCell onClick={() => onName(r.name, r.school)}>{r.name}</LinkCell> : r.name}</Td>
             <Td dim>{r.grade ? `中${r.grade}` : "–"}</Td>
-            <Td>{r.school}</Td>
+            <Td>{onSchool ? <LinkCell onClick={() => onSchool(r.school)}>{r.school}</LinkCell> : r.school}</Td>
             <Td dim>{r.shibu}</Td>
             {showYear && <Td mono>{r.year}</Td>}
             {showYear && <Td dim>{r.meet_kind}</Td>}
@@ -127,7 +135,7 @@ const ResultTable = ({ rows, showYear }: Any) => (
   </div>
 );
 
-/* ---------- 電光掲示板 ---------- */
+/* ---------- 電光掲示板（ランキングタブのみ表示） ---------- */
 const ScoreBoard = ({ summary }: Any) => {
   const best = summary.best_legal;
   const t = useStopwatch(best.time);
@@ -157,28 +165,8 @@ const ScoreBoard = ({ summary }: Any) => {
   );
 };
 
-/* ---------- 記録の推移 ---------- */
-const TrendChart = ({ trends }: Any) => (
-  <div>
-    <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 14px" }}>
-      年度別の最高記録・上位8人平均・中央値（公認・各選手のシーズンベース）。上にいくほど速い。
-    </p>
-    <ResponsiveContainer width="100%" height={340}>
-      <LineChart data={trends} margin={{ top: 8, right: 18, left: -8, bottom: 0 }}>
-        <CartesianGrid stroke={C.grid} strokeDasharray="3 6" vertical={false} />
-        <XAxis dataKey="year" tick={{ fontFamily: fontMono, fontSize: 11, fill: C.sub }} tickLine={false} axisLine={{ stroke: C.grid }} />
-        <YAxis reversed domain={["dataMin - 0.1", "dataMax + 0.1"]} tick={{ fontFamily: fontMono, fontSize: 11, fill: C.sub }} tickFormatter={(v: number) => v.toFixed(1)} tickLine={false} axisLine={false} width={48} />
-        <Tooltip content={<ChartTooltip />} />
-        <Line name="最高" type="monotone" dataKey="best" stroke={C.tartan} strokeWidth={3} dot={{ r: 3, fill: C.tartan, strokeWidth: 0 }} animationDuration={1100} />
-        <Line name="上位8平均" type="monotone" dataKey="top8_avg" stroke={C.ink} strokeWidth={2.5} dot={{ r: 3, fill: C.ink, strokeWidth: 0 }} animationDuration={1100} />
-        <Line name="中央値" type="monotone" dataKey="median" stroke="#9AA1AC" strokeWidth={2} strokeDasharray="5 4" dot={false} animationDuration={1100} />
-      </LineChart>
-    </ResponsiveContainer>
-  </div>
-);
-
-/* ---------- 歴代ランキング ---------- */
-const Rankings = ({ rankings }: Any) => {
+/* ---------- ランキング ---------- */
+const Rankings = ({ rankings, onAthlete, onSchool }: Any) => {
   const [mode, setMode] = useState<"legal" | "any">("legal");
   const [scope, setScope] = useState<string>("all");
   const years = useMemo(() => Object.keys(rankings.by_year || {}).sort((a, b) => +b - +a), [rankings]);
@@ -228,29 +216,54 @@ const Rankings = ({ rankings }: Any) => {
                 <div style={{ position: "absolute", left: 0, top: "50%", height: 3, borderRadius: 2, background: "rgba(255,255,255,.85)", width: running ? "100%" : "0%", maxWidth: "calc(100% - 14px)", transform: "translateY(-50%)", transition: running ? `width ${r.time / 3}s linear` : "none" }} />
                 <div style={{ position: "absolute", top: "50%", left: running ? "calc(100% - 14px)" : 0, transform: "translate(-50%,-50%)", width: 14, height: 14, borderRadius: "50%", background: "#fff", boxShadow: done ? `0 0 0 5px ${C.led}66` : "0 1px 4px rgba(0,0,0,.4)", transition: running ? `left ${r.time / 3}s linear, box-shadow .3s ease` : "none" }} />
               </div>
-              <div style={{ textAlign: "right", opacity: done ? 1 : 0, transform: done ? "none" : "translateX(8px)", transition: "opacity .35s ease, transform .35s ease" }}>
+              <div onClick={() => onAthlete(r.name, r.school)} style={{ textAlign: "right", cursor: "pointer", opacity: done ? 1 : 0, transform: done ? "none" : "translateX(8px)", transition: "opacity .35s ease, transform .35s ease" }}>
                 <div style={{ fontFamily: fontMono, fontSize: 17, fontWeight: 600, color: "#fff", lineHeight: 1.1 }}>
                   {r.time.toFixed(2)}<span style={{ fontSize: 10, marginLeft: 4, color: "#FFD9C7" }}>{windStr(r.wind)}</span>
                 </div>
-                <div style={{ fontFamily: fontBody, fontSize: 11, color: "#FFD9C7" }}>{r.name}・{r.school} {r.year}</div>
+                <div style={{ fontFamily: fontBody, fontSize: 11, color: "#FFD9C7", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 2 }}>{r.name}・{r.school} {r.year}</div>
               </div>
             </div>
           );
         })}
       </div>
-      <ResultTable rows={list.slice(8)} showYear />
+      <ResultTable rows={list.slice(8)} showYear onName={onAthlete} onSchool={onSchool} />
+      <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, marginTop: 10 }}>選手名をクリックすると記録の推移、学校名をクリックすると学校別ページに移動します。</p>
     </div>
   );
 };
 
-/* ---------- 大会別 ---------- */
-const Meets = ({ meets }: Any) => {
+/* ---------- 大会別（全出場者＋フィルター） ---------- */
+const Meets = ({ meets, onAthlete, onSchool }: Any) => {
   const years = useMemo(() => Array.from(new Set(meets.map((m: Any) => m.year))).sort((a: Any, b: Any) => b - a), [meets]);
   const [year, setYear] = useState<Any>(years[0]);
   const list = useMemo(() => meets.filter((m: Any) => m.year === year).sort((a: Any, b: Any) => a.month - b.month), [meets, year]);
   const [idx, setIdx] = useState(0);
   useEffect(() => { setIdx(0); }, [year]);
   const sel = list[idx];
+
+  const [grade, setGrade] = useState("all");
+  const [shibu, setShibu] = useState("all");
+  const [schoolQ, setSchoolQ] = useState("");
+  const bounds = useMemo(() => {
+    if (!sel) return [11, 20];
+    const ts = sel.top.map((r: Any) => r.time);
+    return [Math.floor(Math.min(...ts) * 10) / 10, Math.ceil(Math.max(...ts) * 10) / 10];
+  }, [sel]);
+  const [tmin, setTmin] = useState(bounds[0]);
+  const [tmax, setTmax] = useState(bounds[1]);
+  useEffect(() => { setTmin(bounds[0]); setTmax(bounds[1]); setGrade("all"); setShibu("all"); setSchoolQ(""); }, [sel]); // eslint-disable-line
+  const shibus = useMemo(() => sel ? Array.from(new Set(sel.top.map((r: Any) => r.shibu).filter(Boolean))).sort() : [], [sel]);
+  const filtered = useMemo(() => {
+    if (!sel) return [];
+    const sq = schoolQ.replace(/\s+/g, "");
+    return sel.top.filter((r: Any) =>
+      (grade === "all" || r.grade === grade) &&
+      (shibu === "all" || r.shibu === shibu) &&
+      (!sq || r.school.includes(sq)) &&
+      r.time >= tmin && r.time <= tmax
+    );
+  }, [sel, grade, shibu, schoolQ, tmin, tmax]);
+
   return (
     <div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
@@ -270,12 +283,40 @@ const Meets = ({ meets }: Any) => {
           </button>
         ))}
       </div>
+
       {sel && (
         <>
+          {/* フィルターバー */}
+          <div style={{ background: "#F6F7F9", borderRadius: 14, padding: "14px 16px", marginBottom: 14, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[["all", "全学年"], ["1", "中1"], ["2", "中2"], ["3", "中3"]].map(([v, l]) => (
+                <Chip key={v} on={grade === v} onClick={() => setGrade(v)}>{l}</Chip>
+              ))}
+            </div>
+            <select value={shibu} onChange={(e: Any) => setShibu(e.target.value)}
+              style={{ padding: "8px 12px", borderRadius: 10, border: `1.5px solid ${C.grid}`, fontFamily: fontBody, fontSize: 13, background: "#fff", outline: "none" }}>
+              <option value="all">全支部</option>
+              {shibus.map((s: Any) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input value={schoolQ} onChange={(e: Any) => setSchoolQ(e.target.value)} placeholder="学校名で絞り込み"
+              style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.grid}`, fontFamily: fontBody, fontSize: 13, outline: "none", width: 170, background: "#fff" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 220, flex: "1 1 220px" }}>
+              <div style={{ fontFamily: fontBody, fontSize: 11, color: C.sub }}>
+                タイム範囲 <span style={{ fontFamily: fontMono, color: C.ink, fontWeight: 600 }}>{tmin.toFixed(2)} – {tmax.toFixed(2)}</span> 秒
+              </div>
+              <input type="range" min={bounds[0]} max={bounds[1]} step={0.05} value={tmin}
+                onChange={(e: Any) => setTmin(Math.min(parseFloat(e.target.value), tmax))}
+                style={{ accentColor: C.tartan }} />
+              <input type="range" min={bounds[0]} max={bounds[1]} step={0.05} value={tmax}
+                onChange={(e: Any) => setTmax(Math.max(parseFloat(e.target.value), tmin))}
+                style={{ accentColor: C.ink }} />
+            </div>
+          </div>
           <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 10px" }}>
-            {sel.meet} 女子100m 上位{sel.top.length}（選手ごとの大会内ベスト）
+            {sel.meet}　女子100m　表示 <strong style={{ color: C.ink }}>{filtered.length}</strong> / 全 {sel.top.length} 名（選手ごとの大会内ベスト・速い順）
           </p>
-          <ResultTable rows={sel.top} />
+          <ResultTable rows={filtered} onName={onAthlete} onSchool={onSchool} />
+          <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, marginTop: 10 }}>選手名・学校名をクリックすると、それぞれの詳細ページに移動します。</p>
         </>
       )}
     </div>
@@ -283,9 +324,15 @@ const Meets = ({ meets }: Any) => {
 };
 
 /* ---------- 学校別 ---------- */
-const Schools = ({ schools }: Any) => {
+const Schools = ({ schools, onAthlete, pending, clearPending }: Any) => {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Any>(null);
+  useEffect(() => {
+    if (!pending) return;
+    const m = schools.find((s: Any) => s.school === pending);
+    if (m) setSel(m); else { setQ(pending); setSel(null); }
+    clearPending();
+  }, [pending, schools]); // eslint-disable-line
   const list = useMemo(() => {
     const k = q.replace(/\s+/g, "");
     const base = k ? schools.filter((s: Any) => (s.school + s.shibu).includes(k)) : schools;
@@ -300,15 +347,15 @@ const Schools = ({ schools }: Any) => {
           <span style={{ fontFamily: fontMono, fontSize: 14, color: C.tartan, fontWeight: 700 }}>校内最高 {sel.best.time.toFixed(2)}</span>
           <button onClick={() => setSel(null)} style={{ marginLeft: "auto", background: "none", border: "none", color: C.sub, cursor: "pointer", fontFamily: fontBody, fontSize: 12.5, textDecoration: "underline" }}>← 学校一覧に戻る</button>
         </div>
-        <ResultTable rows={sel.top} showYear />
-        <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, marginTop: 10 }}>各選手の自己ベスト順（公認優先）。</p>
+        <ResultTable rows={sel.top} showYear onName={onAthlete} />
+        <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, marginTop: 10 }}>各選手の自己ベスト順（公認優先）。選手名をクリックすると記録の推移へ。</p>
       </div>
     );
   }
   return (
     <div>
       <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 12px" }}>
-        校内最高記録順の学校ランキング。学校名で絞り込みできます。クリックで各校の選手一覧へ。
+        校内最高記録順の学校ランキング。クリックで各校のメンバーと個人成績へ。
       </p>
       <input value={q} onChange={(e: Any) => setQ(e.target.value)} placeholder="学校名・支部で検索"
         style={{ width: "100%", maxWidth: 380, padding: "11px 16px", borderRadius: 12, border: `1.5px solid ${C.grid}`, fontFamily: fontBody, fontSize: 14, outline: "none", background: "#fff", marginBottom: 14 }} />
@@ -339,36 +386,18 @@ const Schools = ({ schools }: Any) => {
   );
 };
 
-/* ---------- 記録の分布 ---------- */
-const Distribution = ({ distribution, years }: Any) => {
-  const [year, setYear] = useState<string>(String(years[years.length - 1]));
-  const data = useMemo(() => Object.entries(distribution[year] || {}).map(([bin, count]) => ({ bin, count })), [distribution, year]);
-  const max = Math.max(1, ...data.map((d: Any) => d.count));
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        {years.map((y: number) => <Chip key={y} on={String(y) === year} onClick={() => setYear(String(y))}>{y}</Chip>)}
-      </div>
-      <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 14px" }}>{year}年度・各選手のシーズンベスト分布（公認・0.2秒刻み）。</p>
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={data} margin={{ top: 8, right: 18, left: -8, bottom: 0 }}>
-          <CartesianGrid stroke={C.grid} strokeDasharray="3 6" vertical={false} />
-          <XAxis dataKey="bin" tick={{ fontFamily: fontMono, fontSize: 11, fill: C.sub }} tickLine={false} axisLine={{ stroke: C.grid }} />
-          <YAxis tick={{ fontFamily: fontMono, fontSize: 11, fill: C.sub }} tickLine={false} axisLine={false} width={40} />
-          <Tooltip content={<ChartTooltip unit="名" />} cursor={{ fill: "#171A2010" }} />
-          <Bar dataKey="count" name="人数" radius={[6, 6, 0, 0]} animationDuration={800}>
-            {data.map((d: Any, i: number) => <Cell key={i} fill={d.count === max ? C.tartan : C.ink} />)}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
 /* ---------- 選手検索 ---------- */
-const Athletes = ({ athletes }: Any) => {
+const Athletes = ({ athletes, onSchool, pending, clearPending }: Any) => {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Any>(null);
+  useEffect(() => {
+    if (!pending) return;
+    const norm = (s: string) => (s || "").replace(/\s+/g, "");
+    let m = athletes.find((a: Any) => norm(a.n) === norm(pending.name) && a.s === pending.school);
+    if (!m) m = athletes.find((a: Any) => norm(a.n) === norm(pending.name));
+    if (m) { setSel(m); setQ(pending.name); } else { setQ(pending.name); setSel(null); }
+    clearPending();
+  }, [pending, athletes]); // eslint-disable-line
   const hits = useMemo(() => {
     const k = q.replace(/\s+/g, "");
     if (k.length < 2) return [];
@@ -399,13 +428,17 @@ const Athletes = ({ athletes }: Any) => {
         </div>
       )}
       {!sel && q.replace(/\s+/g, "").length >= 2 && hits.length === 0 && (
-        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, marginTop: 10 }}>該当する選手が見つかりません。</p>
+        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, marginTop: 10 }}>
+          該当する選手が見つかりません。（収録記録が1件のみの選手は推移グラフの対象外です）
+        </p>
       )}
       {sel && (
         <div style={{ marginTop: 18 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
             <h3 style={{ fontFamily: fontBody, fontSize: 18, fontWeight: 800, margin: 0 }}>{sel.n}</h3>
-            <span style={{ fontFamily: fontBody, fontSize: 13, color: C.sub }}>{sel.b}・{sel.s}</span>
+            <span style={{ fontFamily: fontBody, fontSize: 13, color: C.sub }}>
+              {sel.b}・<LinkCell onClick={() => onSchool(sel.s)}>{sel.s}</LinkCell>
+            </span>
             <span style={{ fontFamily: fontMono, fontSize: 14, color: C.tartan, fontWeight: 700 }}>PB {sel.pb.toFixed(2)}</span>
             <button onClick={() => setSel(null)} style={{ marginLeft: "auto", background: "none", border: "none", color: C.sub, cursor: "pointer", fontFamily: fontBody, fontSize: 12.5, textDecoration: "underline" }}>← 検索に戻る</button>
           </div>
@@ -434,7 +467,7 @@ const Athletes = ({ athletes }: Any) => {
                 activeDot={{ r: 7, fill: C.ink, stroke: "#fff", strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
-          <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub }}>○ 白抜きの点は追い風参考（+2.0m/s超）。</p>
+          <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub }}>○ 白抜きの点は追い風参考（+2.0m/s超）。学校名をクリックすると学校別ページへ。</p>
         </div>
       )}
     </div>
@@ -457,8 +490,7 @@ const TimeCheck = ({ season }: Any) => {
   return (
     <div>
       <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 14px" }}>
-        100mのタイムを入力すると、東京都の中学女子の中でだいたい何位くらいかがわかります
-        （各年度・公認シーズンベストとの比較）。
+        100mのタイムを入力すると、東京都の中学女子の中でだいたい何位くらいかがわかります（各年度・公認シーズンベストとの比較）。
       </p>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
         <input value={input} onChange={(e: Any) => setInput(e.target.value)} placeholder="例: 13.45" inputMode="decimal"
@@ -517,28 +549,162 @@ const TimeCheck = ({ season }: Any) => {
   );
 };
 
+/* ---------- 記録の分布 ---------- */
+const Distribution = ({ distribution, years }: Any) => {
+  const [year, setYear] = useState<string>(String(years[years.length - 1]));
+  const data = useMemo(() => Object.entries(distribution[year] || {}).map(([bin, count]) => ({ bin, count })), [distribution, year]);
+  const max = Math.max(1, ...data.map((d: Any) => d.count));
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        {years.map((y: number) => <Chip key={y} on={String(y) === year} onClick={() => setYear(String(y))}>{y}</Chip>)}
+      </div>
+      <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 14px" }}>{year}年度・各選手のシーズンベスト分布（公認・0.2秒刻み）。</p>
+      <ResponsiveContainer width="100%" height={350}>
+        <BarChart data={data} margin={{ top: 8, right: 18, left: -8, bottom: 8 }}>
+          <CartesianGrid stroke={C.grid} strokeDasharray="3 6" vertical={false} />
+          <XAxis dataKey="bin" interval={0} angle={-45} textAnchor="end" height={52} tickMargin={6}
+            tick={{ fontFamily: fontMono, fontSize: 10.5, fill: C.sub }} tickLine={false} axisLine={{ stroke: C.grid }} />
+          <YAxis tick={{ fontFamily: fontMono, fontSize: 11, fill: C.sub }} tickLine={false} axisLine={false} width={40} />
+          <Tooltip content={<ChartTooltip unit="名" />} cursor={{ fill: "#171A2010" }} />
+          <Bar dataKey="count" name="人数" radius={[6, 6, 0, 0]} animationDuration={800}>
+            {data.map((d: Any, i: number) => <Cell key={i} fill={d.count === max ? C.tartan : C.ink} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+/* ---------- 成長の予想 ---------- */
+const GrowthForecast = ({ athletes }: Any) => {
+  const [grade, setGrade] = useState("1");
+  const [input, setInput] = useState("");
+  const t = parseFloat(input);
+  const valid = !isNaN(t) && t >= 10 && t <= 25;
+
+  // 過去の選手たちの「学年別シーズンベスト」のペアを作る
+  const model = useMemo(() => {
+    const pairs: Any = { "1>2": [], "2>3": [], "1>3": [] };
+    athletes.forEach((a: Any) => {
+      const best: Any = {};
+      a.pts.forEach((p: Any) => {
+        if (p.g && p.l && (best[p.g] === undefined || p.t < best[p.g])) best[p.g] = p.t;
+      });
+      if (best["1"] !== undefined && best["2"] !== undefined) pairs["1>2"].push([best["1"], best["2"]]);
+      if (best["2"] !== undefined && best["3"] !== undefined) pairs["2>3"].push([best["2"], best["3"]]);
+      if (best["1"] !== undefined && best["3"] !== undefined) pairs["1>3"].push([best["1"], best["3"]]);
+    });
+    return pairs;
+  }, [athletes]);
+
+  const predict = (key: string) => {
+    const arr = model[key];
+    if (!arr || !arr.length) return null;
+    let w = 0.25, ys: number[] = [];
+    while (w <= 0.85) {
+      ys = arr.filter(([x]: Any) => Math.abs(x - t) <= w).map(([, y]: Any) => y);
+      if (ys.length >= 15) break;
+      w += 0.15;
+    }
+    if (ys.length < 5) return null;
+    ys.sort((a, b) => a - b);
+    const q = (p: number) => ys[Math.min(ys.length - 1, Math.floor(p * ys.length))];
+    return { lo: q(0.25), mid: q(0.5), hi: q(0.75), n: ys.length };
+  };
+
+  const preds: Any[] = [];
+  if (valid) {
+    if (grade === "1") {
+      const p1 = predict("1>2"); if (p1) preds.push({ label: "1年後（中2）", ...p1 });
+      const p2 = predict("1>3"); if (p2) preds.push({ label: "2年後（中3）", ...p2 });
+    } else if (grade === "2") {
+      const p1 = predict("2>3"); if (p1) preds.push({ label: "1年後（中3）", ...p1 });
+    }
+  }
+
+  return (
+    <div>
+      <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 14px" }}>
+        現在の学年とシーズンベストを入力すると、過去6年間に同じくらいのタイムだった先輩たちが
+        翌年・翌々年にどんな記録を出したかをもとに、予想レンジを表示します。
+      </p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[["1", "中1"], ["2", "中2"], ["3", "中3"]].map(([v, l]) => (
+            <Chip key={v} on={grade === v} onClick={() => setGrade(v)}>{l}</Chip>
+          ))}
+        </div>
+        <input value={input} onChange={(e: Any) => setInput(e.target.value)} placeholder="ベストタイム 例: 13.80" inputMode="decimal"
+          style={{ width: 200, padding: "12px 16px", borderRadius: 12, border: `1.5px solid ${C.grid}`, fontFamily: fontMono, fontSize: 18, outline: "none", background: "#fff", fontWeight: 600 }} />
+        <span style={{ fontFamily: fontBody, fontSize: 13, color: C.sub }}>秒</span>
+      </div>
+      {input && !valid && (
+        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.tartan }}>10.00〜25.00の範囲で入力してください。</p>
+      )}
+      {valid && grade === "3" && (
+        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub }}>
+          中3は中学カテゴリの最終学年のため、このデータベースでは翌年の予想ができません。高校での活躍を応援しています！
+        </p>
+      )}
+      {valid && grade !== "3" && preds.length === 0 && (
+        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub }}>
+          近いタイムの先輩データが少なく、信頼できる予想を出せませんでした。タイムを変えて試してみてください。
+        </p>
+      )}
+      {preds.length > 0 && (
+        <>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
+            {preds.map((p) => (
+              <div key={p.label} style={{ background: C.board, borderRadius: 16, padding: "20px 26px", boxShadow: "0 14px 32px rgba(20,22,27,.25)", flex: "1 1 260px" }}>
+                <div style={{ fontFamily: fontBody, fontSize: 11, letterSpacing: ".18em", color: "#8A92A0", marginBottom: 6 }}>{p.label}の予想</div>
+                <div style={{ fontFamily: fontMono, fontSize: "clamp(28px,4.5vw,40px)", fontWeight: 600, color: C.led, lineHeight: 1.1, textShadow: `0 0 20px ${C.led}44` }}>
+                  {p.lo.toFixed(2)}<span style={{ fontSize: "0.55em", color: C.ledDim, margin: "0 4px" }}>〜</span>{p.hi.toFixed(2)}
+                </div>
+                <div style={{ fontFamily: fontBody, fontSize: 12.5, color: "#B7BDC8", marginTop: 8 }}>
+                  中央値 <span style={{ fontFamily: fontMono, color: "#EDEFF2", fontWeight: 600 }}>{p.mid.toFixed(2)}</span>
+                  　参考にした先輩 {p.n} 名
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, lineHeight: 1.8 }}>
+            ※ レンジは「同レベルだった先輩の翌年記録」の中央50%（25〜75パーセンタイル）。
+            翌年も大会に出続けた選手のデータに基づくため、やや「伸びた側」に偏る傾向があります。
+            成長のペースには大きな個人差があるので、あくまで目安として楽しんでください。
+          </p>
+        </>
+      )}
+    </div>
+  );
+};
+
 /* ---------- メイン ---------- */
 const TABS = [
-  { id: "trend", label: "記録の推移" },
   { id: "rank", label: "ランキング" },
-  { id: "chk", label: "順位チェック" },
   { id: "meet", label: "大会別" },
   { id: "sch", label: "学校別" },
-  { id: "dist", label: "記録の分布" },
   { id: "ath", label: "選手検索" },
+  { id: "chk", label: "順位チェック" },
+  { id: "dist", label: "記録の分布" },
+  { id: "grow", label: "成長の予想" },
 ];
 
 export default function RecordsPage() {
-  const [tab, setTab] = useState("trend");
+  const [tab, setTab] = useState("rank");
+  const [pendingAth, setPendingAth] = useState<Any>(null);
+  const [pendingSch, setPendingSch] = useState<Any>(null);
+  const gotoAthlete = useCallback((name: Any, school: Any) => { setPendingAth({ name, school }); setTab("ath"); }, []);
+  const gotoSchool = useCallback((school: Any) => { setPendingSch(school); setTab("sch"); }, []);
+
   const summary = useJson("/data/summary.json");
-  const trends = useJson("/data/trends.json");
   const rankings = useJson("/data/rankings.json");
   const distribution = useJson("/data/distribution.json");
   const meets = useJson("/data/meets.json", tab === "meet");
   const schools = useJson("/data/schools.json", tab === "sch");
   const season = useJson("/data/season_times.json", tab === "chk");
-  const athletes = useJson("/data/athletes.json", tab === "ath");
-  const loading = !summary || !trends || !rankings || !distribution;
+  const athletes = useJson("/data/athletes.json", tab === "ath" || tab === "grow");
+  const loading = !summary || !rankings || !distribution;
   const Spinner = <div style={{ fontFamily: fontMono, color: C.sub, padding: "60px 0", textAlign: "center", animation: "pulse 1.2s infinite" }}>LOADING…</div>;
 
   return (
@@ -549,7 +715,7 @@ export default function RecordsPage() {
         .rise { animation: rise .55s cubic-bezier(.22,1,.36,1) both; }
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
         @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
-        button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid ${C.tartan}; outline-offset: 2px; }
+        button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid ${C.tartan}; outline-offset: 2px; }
         tr:hover td { background: #F6F7F9; }
       `}</style>
 
@@ -566,10 +732,12 @@ export default function RecordsPage() {
 
         {loading ? Spinner : (
           <>
-            <div className="rise" style={{ animationDelay: ".08s", marginBottom: 26 }}>
-              <ScoreBoard summary={summary} />
-            </div>
-            <nav className="rise" style={{ animationDelay: ".16s", display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+            {tab === "rank" && (
+              <div className="rise" style={{ marginBottom: 26 }}>
+                <ScoreBoard summary={summary} />
+              </div>
+            )}
+            <nav className="rise" style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
               {TABS.map(({ id, label }) => (
                 <button key={id} onClick={() => setTab(id)} style={{
                   padding: "9px 18px", borderRadius: 12, cursor: "pointer",
@@ -582,13 +750,13 @@ export default function RecordsPage() {
               ))}
             </nav>
             <main key={tab} className="rise" style={{ background: "#fff", borderRadius: 20, padding: "24px 26px 18px", boxShadow: "0 2px 6px rgba(23,26,32,.06), 0 16px 40px rgba(23,26,32,.07)" }}>
-              {tab === "trend" && <TrendChart trends={trends} />}
-              {tab === "rank" && <Rankings rankings={rankings} />}
+              {tab === "rank" && <Rankings rankings={rankings} onAthlete={gotoAthlete} onSchool={gotoSchool} />}
+              {tab === "meet" && (meets ? <Meets meets={meets} onAthlete={gotoAthlete} onSchool={gotoSchool} /> : Spinner)}
+              {tab === "sch" && (schools ? <Schools schools={schools} onAthlete={gotoAthlete} pending={pendingSch} clearPending={() => setPendingSch(null)} /> : Spinner)}
+              {tab === "ath" && (athletes ? <Athletes athletes={athletes} onSchool={gotoSchool} pending={pendingAth} clearPending={() => setPendingAth(null)} /> : Spinner)}
               {tab === "chk" && (season ? <TimeCheck season={season} /> : Spinner)}
-              {tab === "meet" && (meets ? <Meets meets={meets} /> : Spinner)}
-              {tab === "sch" && (schools ? <Schools schools={schools} /> : Spinner)}
               {tab === "dist" && <Distribution distribution={distribution} years={summary.years} />}
-              {tab === "ath" && (athletes ? <Athletes athletes={athletes} /> : Spinner)}
+              {tab === "grow" && (athletes ? <GrowthForecast athletes={athletes} /> : Spinner)}
             </main>
             <footer style={{ marginTop: 22, fontSize: 11.5, color: C.sub, lineHeight: 1.9 }}>
               出典: 東京都中学校体育連盟 陸上競技部 記録ページ（gold.jaic.org/tokyo/cyuugaku）。
