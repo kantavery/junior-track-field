@@ -327,6 +327,7 @@ const Meets = ({ meets, onAthlete, onSchool }: Any) => {
 const Schools = ({ schools, onAthlete, pending, clearPending }: Any) => {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Any>(null);
+  const [sort, setSort] = useState<"avg" | "best" | "n">("avg");
   useEffect(() => {
     if (!pending) return;
     const m = schools.find((s: Any) => s.school === pending);
@@ -335,9 +336,13 @@ const Schools = ({ schools, onAthlete, pending, clearPending }: Any) => {
   }, [pending, schools]); // eslint-disable-line
   const list = useMemo(() => {
     const k = q.replace(/\s+/g, "");
-    const base = k ? schools.filter((s: Any) => (s.school + s.shibu).includes(k)) : schools;
-    return base.slice(0, 60);
-  }, [q, schools]);
+    let base = k ? schools.filter((s: Any) => (s.school + s.shibu).includes(k)) : schools.slice();
+    base.sort((a: Any, b: Any) =>
+      sort === "avg" ? a.avg - b.avg
+        : sort === "best" ? (a.best.time - b.best.time)
+          : (b.n_athletes - a.n_athletes));
+    return base;
+  }, [q, schools, sort]);
   if (sel) {
     return (
       <div>
@@ -355,26 +360,35 @@ const Schools = ({ schools, onAthlete, pending, clearPending }: Any) => {
   return (
     <div>
       <p style={{ fontFamily: fontBody, fontSize: 13, color: C.sub, margin: "0 0 12px" }}>
-        校内最高記録順の学校ランキング。クリックで各校のメンバーと個人成績へ。
+        登録選手の平均タイム順の学校ランキング（全{schools.length}校）。クリックで各校のメンバーと個人成績へ。
       </p>
-      <input value={q} onChange={(e: Any) => setQ(e.target.value)} placeholder="学校名・支部で検索"
-        style={{ width: "100%", maxWidth: 380, padding: "11px 16px", borderRadius: 12, border: `1.5px solid ${C.grid}`, fontFamily: fontBody, fontSize: 14, outline: "none", background: "#fff", marginBottom: 14 }} />
-      <div style={{ maxHeight: 480, overflowY: "auto", border: `1px solid ${C.grid}`, borderRadius: 12 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+        <input value={q} onChange={(e: Any) => setQ(e.target.value)} placeholder="学校名・支部で検索"
+          style={{ flex: "1 1 240px", maxWidth: 360, padding: "11px 16px", borderRadius: 12, border: `1.5px solid ${C.grid}`, fontFamily: fontBody, fontSize: 14, outline: "none", background: "#fff" }} />
+        <div style={{ display: "flex", gap: 6 }}>
+          <span style={{ fontFamily: fontBody, fontSize: 12, color: C.sub, alignSelf: "center" }}>並び替え:</span>
+          <Chip on={sort === "avg"} onClick={() => setSort("avg")}>平均タイム</Chip>
+          <Chip on={sort === "best"} onClick={() => setSort("best")}>校内最高</Chip>
+          <Chip on={sort === "n"} onClick={() => setSort("n")}>選手数</Chip>
+        </div>
+      </div>
+      <div style={{ maxHeight: 540, overflowY: "auto", border: `1px solid ${C.grid}`, borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: fontBody, fontSize: 13 }}>
           <thead>
             <tr style={{ position: "sticky", top: 0, background: "#fff", boxShadow: `0 1px 0 ${C.grid}`, zIndex: 1 }}>
-              {["順位", "学校", "支部", "校内最高", "記録保持者", "収録選手"].map((h) => (
+              {["順位", "学校", "支部", "平均", "校内最高", "記録保持者", "選手数"].map((h) => (
                 <th key={h} style={{ textAlign: "left", padding: "10px 12px", color: C.sub, fontWeight: 600, fontSize: 11.5, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {list.map((s: Any) => (
+            {list.map((s: Any, i: number) => (
               <tr key={s.school} onClick={() => setSel(s)} style={{ borderTop: `1px solid ${C.grid}`, cursor: "pointer" }}>
-                <Td mono>{s.rank}</Td>
+                <Td mono>{i + 1}</Td>
                 <Td bold>{s.school}</Td>
                 <Td dim>{s.shibu}</Td>
-                <Td mono bold>{s.best.time.toFixed(2)}{s.best.legal === 0 && <span style={{ color: C.tartan, fontSize: 10, marginLeft: 3 }}>追参</span>}</Td>
+                <Td mono bold>{s.avg.toFixed(2)}</Td>
+                <Td mono>{s.best.time.toFixed(2)}{s.best.legal === 0 && <span style={{ color: C.tartan, fontSize: 10, marginLeft: 3 }}>追参</span>}</Td>
                 <Td dim>{s.best.name}（{s.best.year}）</Td>
                 <Td mono dim>{s.n_athletes}</Td>
               </tr>
@@ -382,6 +396,9 @@ const Schools = ({ schools, onAthlete, pending, clearPending }: Any) => {
           </tbody>
         </table>
       </div>
+      <p style={{ fontFamily: fontBody, fontSize: 11.5, color: C.sub, marginTop: 10 }}>
+        平均タイムは各校の収録選手それぞれの自己ベスト（公認優先）の平均です。
+      </p>
     </div>
   );
 };
