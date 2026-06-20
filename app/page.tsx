@@ -42,10 +42,10 @@ const MEETS = [
   {
     id: "tokyo-regional", cat: "東京都中体連", season: "春",
     title: "第77回 東京都中学校地域別陸上競技大会",
-    dates: "多摩 5/9(土)・5/10(日)／区部 5/16(土)・5/17(日) ほか3・4日目 5/30・31", start: "20260509", end: "20260601",
+    dates: "多摩 5/9・10＋5/30・31（上柚木）／区部 5/16・17＋6/6・7（夢の島）", start: "20260509", end: "20260608",
     venue: "多摩: 上柚木公園陸上競技場／区部: 夢の島競技場",
     desc: "東京都中体連の地域別大会。記録会形式で行われ、ここで標準記録突破または入賞すると通信・総体（都大会）への出場資格が得られます。",
-    youkou: "https://www.tokyoctr.com/youkou/chiiki.pdf",
+    youkou: "https://www.tokyoctr.com/youkou/chiiki2.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -54,7 +54,7 @@ const MEETS = [
     dates: "6/27(土)・6/28(日)", start: "20260627", end: "20260629",
     venue: "上柚木公園陸上競技場",
     desc: "全国通信陸上につながる東京都大会。ランキング確認にも使われる大会です。",
-    youkou: "https://www.tokyoctr.com/youkou/tuushin.pdf",
+    youkou: "https://www.tokyoctr.com/youkou/tuushin3.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -62,8 +62,8 @@ const MEETS = [
     title: "第65回 東京都中学校総合体育大会 陸上競技大会 兼 第79回 東京都中学校陸上競技選手権大会",
     dates: "7/24(金)・7/25(土)・7/26(日)", start: "20260724", end: "20260727",
     venue: "上柚木公園陸上競技場",
-    desc: "東京都中学校総合体育大会と東京都中学校陸上競技選手権大会を兼ねる主要大会です。",
-    youkou: "https://www.tokyoctr.com/youkou/soutai.pdf",
+    desc: "東京都中学校総合体育大会と東京都中学校陸上競技選手権大会を兼ねる主要大会。地域別での標準記録突破・入賞が出場条件です。",
+    youkou: "https://www.tokyoctr.com/youkou/sou3.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -100,6 +100,24 @@ const MEETS = [
     venue: "駒沢オリンピック公園総合運動場陸上競技場",
     desc: "令和8年度の競技大会実施種目表に掲載されている支部対抗大会。支部対抗は学校の市区町村ごとの地域所属で出場します。",
     youkou: "https://www.tokyoctr.com/youkou/shibu.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "tokyo-ekiden", cat: "東京都中体連", season: "秋",
+    title: "第79回(男子)・第41回(女子) 東京都中学校駅伝競走大会",
+    dates: "11/8(日) ※雨天決行", start: "20261108", end: "20261109",
+    venue: "江東区夢の島競技場および周辺特設コース",
+    desc: "全国・関東中学校駅伝の東京都代表選考会を兼ねる駅伝大会。女子は5区間12km、男子は6区間18kmで競います。",
+    youkou: "https://www.tokyoctr.com/youkou/ekiden.pdf",
+    results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
+  },
+  {
+    id: "tokyo-road", cat: "東京都中体連", season: "冬",
+    title: "第65回 東京都中学校ロードレース大会",
+    dates: "2027/1/24(日) ※荒天順延", start: "20270124", end: "20270125",
+    venue: "区部: 夢の島競技場周辺特設コース／多摩: 未定",
+    desc: "学年別の距離でロードを走る大会。女子は1km・2km、男子は2km・3kmの種目があります。",
+    youkou: "https://www.tokyoctr.com/youkou/road.pdf",
     results: "https://gold.jaic.org/tokyo/cyuugaku/index.htm",
   },
   {
@@ -148,7 +166,7 @@ const catColor = (cat: string) => (cat === "第2支部" ? C.branch : C.tartan);
 /* ---------- 共通ナビ ---------- */
 const SiteNav = ({ active }: Any) => (
   <nav style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-    {[["/", "SCHEDULE", "大会日程"], ["/records", "RECORDS", "記録データベース"]].map(([href, en, ja]) => {
+    {[["/", "SCHEDULE", "大会日程"], ["/records", "RECORDS", "女子100m記録"]].map(([href, en, ja]) => {
       const on = active === en;
       return (
         <a key={en} href={href} style={{
@@ -331,7 +349,7 @@ export default function SchedulePage() {
 
         <SectionTitle en="ALL EVENTS" ja="大会一覧（日程順）" />
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {MEETS.map((m, i) => (
+          {[...MEETS].sort((a, b) => +toDate(a.start) - +toDate(b.start)).map((m, i) => (
             <div key={m.id} className="rise" style={{ animationDelay: `${0.04 * i}s` }}>
               <MeetCard m={m} isNext={next && m.id === next.id} />
             </div>
