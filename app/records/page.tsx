@@ -25,7 +25,7 @@ type Any = any;
 /* ---------- 共通ナビ ---------- */
 const SiteNav = ({ active }: Any) => (
   <nav style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-    {[["/", "SCHEDULE", "大会日程"], ["/records", "RECORDS", "記録データベース"]].map(([href, en, ja]) => {
+    {[["/", "SCHEDULE", "大会日程"], ["/records", "RECORDS", "女子100m記録"]].map(([href, en, ja]) => {
       const on = active === en;
       return (
         <a key={en} href={href} style={{
@@ -743,7 +743,7 @@ export default function RecordsPage() {
             <h1 style={{ fontFamily: fontDisplay, fontSize: "clamp(40px,6vw,60px)", margin: 0, letterSpacing: ".02em", lineHeight: 1 }}>
               TOKYO JHS <span style={{ color: C.tartan }}>W100M</span> ARCHIVE
             </h1>
-            <p style={{ margin: 0, fontSize: 13, color: C.sub, fontWeight: 500 }}>東京都中学女子100m 記録データベース</p>
+            <p style={{ margin: 0, fontSize: 13, color: C.sub, fontWeight: 500 }}>東京都中学 <strong style={{ color: C.tartan }}>女子100m</strong> 記録データベース</p>
           </div>
         </header>
 
